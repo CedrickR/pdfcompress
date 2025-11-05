@@ -48,6 +48,12 @@ def compress_pdf(input_path: Path, output_path: Path, quality: str) -> None:
         raise RuntimeError("La compression a échoué. Vérifiez que le fichier est valide.") from exc
 
 
+def get_download_filename(_: str) -> str:
+    """Return the name used for the compressed PDF download."""
+
+    return "Riad-Villa-Blanche-Carte-des-soins-2025-09.pdf"
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
     app.config["UPLOAD_FOLDER"] = str(UPLOAD_DIR)
@@ -88,7 +94,7 @@ def create_app() -> Flask:
                 compressed_tmp.name,
                 mimetype="application/pdf",
                 as_attachment=True,
-                download_name=f"compressed_{filename}",
+                download_name=get_download_filename(filename),
             )
         except RuntimeError as err:
             flash(str(err), "danger")
