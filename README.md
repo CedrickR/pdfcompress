@@ -61,6 +61,32 @@ yum install ghostscript -y
 - Choisissez le niveau de compression souhaité.
 - Téléchargez immédiatement le PDF compressé.
 
+## Conteneurisation
+
+Ce dépôt fournit également une configuration complète pour exécuter l'application
+dans un conteneur Docker.
+
+### Dockerfile
+
+Le fichier `Dockerfile` définit une image basée sur `python:3.11-slim` et installe
+les dépendances système nécessaires à la compression de PDF (`ghostscript` et
+`poppler-utils`). Il prépare ensuite l'environnement Python avec les dépendances
+listées dans `requirements.txt`, ajoute `gunicorn` comme serveur WSGI, copie les
+sources de l'application et crée le répertoire persistant `/app/data` utilisé pour
+stocker les fichiers temporaires. Le conteneur expose le port 8000 et lance
+automatiquement l'application via Gunicorn avec deux workers, quatre threads et un
+timeout de 120 secondes.
+
+### docker-compose.yml
+
+Le fichier `docker-compose.yml` décrit un service `pdfcompress` qui construit
+l'image à partir du `Dockerfile` local et publie le port 8000 pour accéder à
+l'application. Deux volumes sont montés : le dépôt courant dans le conteneur pour
+faciliter le développement et `pdf_data` pour persister les fichiers générés dans
+`/app/data`. Le service définit également quelques variables d'environnement
+(`PYTHONUNBUFFERED` et `APP_ENV`) et est configuré pour redémarrer automatiquement
+(`restart: unless-stopped`).
+
 ## Personnalisation
 
 - Les niveaux de compression sont définis dans `QUALITY_PRESETS` dans `app.py`.
