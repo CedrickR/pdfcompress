@@ -2,6 +2,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import Optional
 
 from flask import (Flask, flash, redirect, render_template, request, send_file,
                    url_for)
@@ -12,6 +13,8 @@ UPLOAD_DIR = BASE_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 ALLOWED_EXTENSIONS = {"pdf"}
+
+DEFAULT_DOWNLOAD_FILENAME = "Riad-Villa-Blanche-Carte-des-soins-2025-09.pdf"
 
 QUALITY_PRESETS = {
     "low": "/screen",
@@ -48,10 +51,17 @@ def compress_pdf(input_path: Path, output_path: Path, quality: str) -> None:
         raise RuntimeError("La compression a échoué. Vérifiez que le fichier est valide.") from exc
 
 
-def get_download_filename(_: str) -> str:
+def get_download_filename(_: str, custom_name: Optional[str] = None) -> str:
     """Return the name used for the compressed PDF download."""
 
-    return "Riad-Villa-Blanche-Carte-des-soins-2025-09.pdf"
+    if custom_name:
+        sanitized = secure_filename(custom_name)
+        if sanitized:
+            if not sanitized.lower().endswith(".pdf"):
+                sanitized = f"{sanitized}.pdf"
+            return sanitized
+
+    return DEFAULT_DOWNLOAD_FILENAME
 
 
 def create_app() -> Flask:
@@ -81,6 +91,7 @@ def create_app() -> Flask:
 
         filename = secure_filename(file.filename)
         quality = request.form.get("quality", "medium")
+        custom_name = request.form.get("download_name", "").strip() or None
 
         with tempfile.NamedTemporaryFile(dir=UPLOAD_DIR, suffix=".pdf", delete=False) as original_tmp:
             file.save(original_tmp.name)
@@ -94,7 +105,7 @@ def create_app() -> Flask:
                 compressed_tmp.name,
                 mimetype="application/pdf",
                 as_attachment=True,
-                download_name=get_download_filename(filename),
+                download_name=get_download_filename(filename, custom_name),
             )
         except RuntimeError as err:
             flash(str(err), "danger")
